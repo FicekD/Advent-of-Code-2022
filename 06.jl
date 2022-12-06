@@ -7,10 +7,7 @@ function read_data(path::AbstractString)
 end
 
 function find_packet(signal::String, num_distinct::Int)
-    for i in range(1, length(signal))
-        if i < num_distinct
-            continue
-        end
+    for i in range(num_distinct, length(signal))
         if length(Set(signal[i-num_distinct+1:i])) == num_distinct
             return i
         end
