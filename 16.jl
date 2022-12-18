@@ -7,7 +7,7 @@ struct Valve
 end
 
 mutable struct Path
-    path::OrderedSet{Int}
+    path::Set{Int}
     score::Int
 end
 
@@ -57,20 +57,16 @@ function calculate_distance_matrix(valves)
 end
 
 function get_all_paths(from, valves, cost_matrix, limit, current_path, all_paths)
-    push!(current_path.path, from)
-    updated = false
     for valve in valves
         if valve.flow_rate == 0 || in(valve.id, current_path.path) continue end
         updated_limit = limit - (cost_matrix[from, valve.id] + 1)
         if updated_limit < 0 continue end
         new_path = deepcopy(current_path)
+        push!(new_path.path, valve.id)
         new_path.score += updated_limit * valve.flow_rate
         get_all_paths(valve.id, valves, cost_matrix, updated_limit, new_path, all_paths)
-        updated = true
     end
-    if !updated
-        push!(all_paths, current_path)
-    end
+    push!(all_paths, current_path)
 end
 
 function main()
@@ -78,8 +74,20 @@ function main()
     dists = calculate_distance_matrix(valves)
 
     paths = Path[]
-    get_all_paths(start_id, valves, dists, 30, Path(OrderedSet{Int}(), 0), paths)
-
+    get_all_paths(start_id, valves, dists, 30, Path(Set{Int}(), 0), paths)
+    @show maximum([path.score for path in paths])
+    
+    paths = Path[]
+    get_all_paths(start_id, valves, dists, 26, Path(Set{Int}(), 0), paths)
+    scores = Int[0]
+    for i in range(1, length(paths) - 1)
+        for j in range(i + 1, length(paths))
+            if isdisjoint(paths[i].path, paths[j].path)
+                push!(scores, paths[i].score + paths[j].score)
+            end
+        end
+    end
+    @show maximum(scores)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
