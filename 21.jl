@@ -1,3 +1,5 @@
+using Roots
+
 mutable struct MutablePair
     first::Any
     second::Any
@@ -11,21 +13,34 @@ function read_data(path::AbstractString)
     return expressions
 end
 
-function main()
-    expressions = read_data("data/21_data.txt")
-    
-    while length(expressions) > 1
-        for (i, expr1) in enumerate(expressions)
-            if !occursin(r"[a-zA-z]", expr1.second)
-                for expr2 in expressions
-                    expr2.second = replace(expr2.second, expr1.first => "($(expr1.second))")
-                end
-                popat!(expressions, i)
-                break
+function find_equation_for(expressions, solve_for)
+    expr_to_solve = expressions[findfirst(x -> x.first == solve_for, expressions)].second
+    updated = true
+    while updated
+        updated = false
+        for expr in expressions
+            if occursin(expr.first, expr_to_solve)
+                expr_to_solve = replace(expr_to_solve, expr.first => "($(expr.second))")
+                updated = true
             end
         end
     end
-    @show Int(eval(Meta.parse(expressions[1].second)))
+    return expr_to_solve
+end
+
+function main()
+    expressions = read_data("data/21_data.txt")
+    
+    result_pt1 = Int(eval(Meta.parse(find_equation_for(expressions, "root"))))
+    @show result_pt1
+    
+    filter!(x -> x.first != "humn", expressions)
+    root_expr = expressions[findfirst(x -> x.first == "root", expressions)].second
+    exprs_to_solve = split(root_expr, " + ")
+    equation_1 = find_equation_for(expressions, exprs_to_solve[1])
+    equation_2 = find_equation_for(expressions, exprs_to_solve[2])
+    f(x) = eval(Meta.parse(replace(equation_1 * "- ($equation_2)", "humn" => "$x")))
+    @show Int(find_zero(f, result_pt1))
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
